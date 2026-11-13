@@ -1,4 +1,3 @@
-[ADS-B Spoofing and Anomaly Detection Project Report.md](https://github.com/user-attachments/files/34796019/ADS-B.Spoofing.and.Anomaly.Detection.Project.Report.md)
 
 # ADS-B Spoofing and Anomaly Detection: Project Report
 
