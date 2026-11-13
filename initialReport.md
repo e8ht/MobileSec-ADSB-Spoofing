@@ -99,6 +99,16 @@ Two non-obvious issues were encountered and resolved during this step, both wort
 
 ### 3.3 Data Collection
 
+
+<img width="1512" height="2016" alt="IMG_6655" src="https://github.com/user-attachments/assets/8e7aa6f0-977b-44b7-9ae8-c8f9ad203580" />
+<img width="1512" height="2016" alt="IMG_6661" src="https://github.com/user-attachments/assets/99fdc435-5a1f-4593-8dbc-81a85ea694cc" />
+<img width="1512" height="2016" alt="IMG_6660" src="https://github.com/user-attachments/assets/e8100145-f286-44ca-94cf-a6643c1b92f0" />
+<img width="1512" height="2016" alt="IMG_6659" src="https://github.com/user-attachments/assets/cbe2fb48-178b-4053-99a4-fdb39c9f915a" />
+<img width="1512" height="2016" alt="IMG_6675" src="https://github.com/user-attachments/assets/b7061079-5742-40fe-9769-c8676392a57c" />
+<img width="2142" height="2856" alt="IMG_6674" src="https://github.com/user-attachments/assets/ff6ed42d-d3f5-402d-b640-4d988ab90d69" />
+<img width="2856" height="2142" alt="IMG_6673" src="https://github.com/user-attachments/assets/3e4bd048-dc0f-4f4d-bccb-4a9a2a33746e" />
+
+
 With the pipeline functional, live ADS-B traffic was captured in interactive mode to confirm correct decoding:
 
 ```
@@ -107,13 +117,15 @@ With the pipeline functional, live ADS-B traffic was captured in interactive mod
 
 A baseline dataset of real aircraft traffic was then logged to disk for offline analysis:
 
+
 ```
 ./dump1090 --device-type soapy --device "driver=hackrf" --raw > baseline_capture.txt
 ```
+
 <img width="935" height="301" alt="image" src="https://github.com/user-attachments/assets/76b39723-abe8-4dd5-ba8d-cc0ccd79d50a" />
 
 
-A single capture session over Bangkok yielded 2,331 raw message lines, each in the standard `*<hex>;` format. Message length was used to distinguish message types: 28-hex-character (112-bit) messages correspond to long Mode S frames, including DF17 Extended Squitter ADS-B messages, while 14-hex-character (56-bit) messages correspond to shorter surveillance replies (e.g., DF0, DF4, DF5, DF11) that lack position/identity payloads and were excluded from further analysis.
+A single capture session of roughly 30 minutes yielded 2,331 raw message lines, each in the standard `*<hex>;` format. Message length was used to distinguish message types: 28-hex-character (112-bit) messages correspond to long Mode S frames, including DF17 Extended Squitter ADS-B messages, while 14-hex-character (56-bit) messages correspond to shorter surveillance replies (e.g., DF0, DF4, DF5, DF11) that lack position/identity payloads and were excluded from further analysis.
 
 <img width="533" height="63" alt="image" src="https://github.com/user-attachments/assets/11700baa-9dc9-4c43-b19a-6431e80f7ffd" />
 
@@ -176,7 +188,7 @@ This confirmed successful decoding of real DF17 messages from multiple distinct 
 ### 3.5 Planned Next Steps
 
 Building on this validated baseline, the remaining methodology consists of three stages. 
-First, construction of a synthetic message injector that generates fabricated DF17 messages, duplicate ICAO addresses, physically implausible position jumps, and inconsistent kinematic data -- and interleaves them into the decoded message stream at the software level, avoiding any actual RF transmission of fabricated aircraft data for safety and regulatory reasons. 
+First, construction of a synthetic message injector that generates fabricated DF17 messages, duplicate ICAO addresses, physically implausible position jumps, and inconsistent kinematic data, and interleaves them into the decoded message stream at the software level, avoiding any actual RF transmission of fabricated aircraft data for safety and regulatory reasons. 
 Second, development of a rule-based detector, informed by the feature classes used in the SODA and related detection literature, that flags messages violating physical plausibility constraints (maximum realistic speed/altitude change between consecutive reports from the same aircraft) or logical consistency constraints (a single ICAO address reporting two incompatible positions within an implausibly short time window). 
 Third, validation of the detector against both the real baseline dataset, to confirm a low false-positive rate on legitimate traffic, and the synthetic injection dataset, to confirm correct identification of fabricated aircraft, forming the live demonstration component of this project.
 
