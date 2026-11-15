@@ -7,7 +7,7 @@ The Automatic Dependent Surveillance–Broadcast (ADS-B) protocol is the backbon
 
 The objective of this project is twofold. First, to demonstrate, hands-on, that ADS-B's lack of authentication is not merely a theoretical weakness but a practically exploitable one, using only consumer-grade hardware. Second, to build a lightweight, rule-based detector capable of distinguishing legitimate aircraft broadcasts from fabricated or anomalous ones, drawing on detection strategies described in published academic research. The deliverable for this project is a live demonstration: real aircraft received and decoded in real time, a spoofed/injected message introduced into the data stream, and a working detector that correctly flags the anomaly, supported by a written report describing the protocol's security weaknesses, our methodology, and our results.
 
-This project was conducted as part of a mobile security course, and its scope was deliberately designed around hardware the team already owned (a HackRF One SDR with a PortaPack H4M standalone interface and a dedicated 1090MHz antenna), the explicit requirement for a hands-on demonstration rather than a literature review, and the practical constraint that only one team member had physical access to the RF hardware, with the remainder of the team distributed internationally and contributing on the software/analysis side.
+This project was conducted as part of a mobile security course, and its scope was deliberately designed around hardware the team already owned (a HackRF One SDR with a PortaPack H4M standalone interface and a dedicated 1090MHz antenna), the explicit requirement for a hands-on demonstration rather than a literature review.
 
 
 
@@ -17,13 +17,13 @@ This project was conducted as part of a mobile security course, and its scope wa
 
 ADS-B operates primarily on 1090MHz using a scheme called the Extended Squitter, in which aircraft periodically and autonomously broadcast short digital messages without being queried by a ground station. These broadcasts are classified by a 5-bit Downlink Format (DF) field at the start of each message. Long messages (112 bits, 28 hex characters) with DF value 17 carry Extended Squitter ADS-B data: the message type of primary interest to this project, since it contains an aircraft's identity (ICAO 24-bit address and callsign), airborne position (latitude/longitude via Compact Position Reporting, or CPR, encoding), velocity, and altitude. Shorter 56-bit messages (DF values such as 0, 4, 5, and 11) correspond to older Mode S surveillance replies such as altitude and identity replies, and were also observed in our captures but are of secondary interest here.
 
-Because ADS-B messages are unencrypted, unauthenticated, and conform to a fully public specification, any party with an SDR capable of tuning to 1090MHz can both receive and, if they choose to transmit, fabricate these messages. This is the central security weakness that motivates our project.
+Because ADS-B messages are unencrypted, unauthenticated, and conform to a fully public specification, any party with an SDR capable of tuning to 1090MHz can both receive and if they choose to transmit, fabricate these messages. This is the central security weakness that motivates our project.
 
 ### 2.2 Related Work
 
-The vulnerability of ADS-B to spoofing is well documented in the academic literature, and our detection approach draws directly on this prior work. Luo and Chan's SODA system uses a two-stage Deep Neural Network to classify incoming messages and their transmitting aircraft based on physical-layer features such as IQ samples and signal phase, achieving a 99.34% detection probability for ground-based spoofing attacks with a false alarm rate of only 0.43%. Jansen et al. take a complementary, non-invasive approach in their NDSS paper, using crowdsourced data from geographically distributed ground sensors to cross-validate aircraft reports and detect GPS spoofing, ADS-B spoofing, and Sybil attacks through consistency checks rather than deep signal analysis. Pirolley et al. similarly apply a deep-learning classifier focused specifically on low-altitude traffic anomaly detection, achieving a 96.2% success rate in identifying spoofed aircraft around Toulouse.
+The vulnerability of ADS-B to spoofing is well documented in the academic literature, and our detection approach draws directly on this prior work. Luo and Chan's SODA system uses a two-stage Deep Neural Network to classify incoming messages and their transmitting aircraft based on physical-layer features such as IQ samples and signal phase, achieving a 99.34% detection probability for ground-based spoofing attacks with a false alarm rate of only 0.43%. Jansen et al. take a complementary, non-invasive approach in their NDSS paper, using crowdsourced data from geographically distributed ground sensors to cross-validate aircraft reports and detect GPS spoofing, ADS-B spoofing, and Sybil attacks through consistency checks rather than deep signal analysis.
 
-Our project does not attempt to replicate the deep-learning architectures used in this prior work, which require large labeled training datasets and specialized infrastructure beyond the scope of a single-semester, single-hardware-owner project. Instead, we adopt the same conceptual foundation that spoofed or anomalous ADS-B messages can be identified by inconsistencies in their content, independent of any cryptographic verification, and implement it as a lightweight, rule-based detector operating on decoded message fields (position jumps, duplicate identifiers, and implausible kinematics) rather than raw physical-layer signal features.
+Our project does not attempt to replicate the deep-learning architectures used in this prior work, which require large labeled training datasets and specialized infrastructure beyond the scope of a single-semester, single-hardware-owner project. Instead, we adopt the same conceptual foundation that spoofed or anomalous ADS-B messages can be identified by inconsistencies in their content, independent of any cryptographic verification, and implement it as a lightweight, rule-based detector operating on decoded message fields rather than raw physical-layer signal features.
 
 
 
@@ -31,7 +31,7 @@ Our project does not attempt to replicate the deep-learning architectures used i
 
 ### 3.1 Hardware and Initial Validation
 
-The receive hardware consists of a HackRF One SDR, a PortaPack H4M add-on board running the open-source Mayhem firmware (providing a standalone touchscreen interface), and a dedicated 1090MHz antenna connected via an SMA male-to-male adapter. Initial hardware validation was performed in two stages. First, the device was powered on and tested standalone, using the PortaPack's built-in ADS-B receiver application, which immediately decoded live aircraft (e.g., flight CCA471, and subsequently N7799T at 20,950ft, heading 069, over Bangkok) directly on the device screen, confirming that the antenna, HackRF, and PortaPack firmware were all functioning correctly before any computer-side software was introduced.
+The receive hardware consists of a HackRF One SDR, a PortaPack H4M add-on board running the open-source Mayhem firmware with a standalone touchscreen interface, and a dedicated 1090MHz antenna connected via an SMA male-to-male adapter. Initial hardware validation was performed in two stages. First, the device was powered on and tested standalone, using the PortaPack's built-in ADS-B receiver application, which immediately decoded live aircraft (e.g., flight CCA471, and subsequently N7799T at 20,950ft, heading 069) directly on the device screen, confirming that the antenna, HackRF, and PortaPack firmware were all functioning correctly before any computer-side software was introduced.
 
 Second, the HackRF was connected to a laptop running a Kali Linux virtual machine for computer-based capture and analysis. This required switching the PortaPack out of its standalone Mayhem mode into native HackRF USB mode, after which the device was correctly enumerated by the host:
 
@@ -93,7 +93,7 @@ make SOAPYSDR=yes LDLIBS="-lSoapySDR"   # LDLIBS (not LIBS) was required to reso
 ```
 <img width="926" height="233" alt="image" src="https://github.com/user-attachments/assets/913e3782-d752-412c-a288-726540bbe095" />
 
-Two non-obvious issues were encountered and resolved during this step, both worth noting as part of our hands-on methodology: first, the standard `make SOAPYSDR=yes` invocation produced `undefined reference` linker errors despite `pkg-config` correctly reporting the SoapySDR library which was resolved by passing the link flag via the `LDLIBS` variable rather than `LIBS`, respecting `ld.bfd`'s requirement that libraries be specified after the object files that reference them. Second, the `--device-type` flag required for HackRF operation is `soapy`, not the more intuitively named `soapysdr`.
+Two non-obvious obstacles were encountered and resolved during this step, both worth noting as part of our hands-on methodology. First, the standard `make SOAPYSDR=yes` invocation produced `undefined reference` linker errors despite `pkg-config` correctly reporting the SoapySDR library which was resolved by passing the link flag via the `LDLIBS` variable rather than `LIBS`, respecting `ld.bfd`'s requirement that libraries be specified after the object files that reference them. Second, the `--device-type` flag required for HackRF operation is `soapy`, not the more intuitively named `soapysdr`.
 
 
 
@@ -104,9 +104,8 @@ Two non-obvious issues were encountered and resolved during this step, both wort
 <img width="1512" height="2016" alt="IMG_6661" src="https://github.com/user-attachments/assets/99fdc435-5a1f-4593-8dbc-81a85ea694cc" />
 <img width="1512" height="2016" alt="IMG_6660" src="https://github.com/user-attachments/assets/e8100145-f286-44ca-94cf-a6643c1b92f0" />
 <img width="1512" height="2016" alt="IMG_6659" src="https://github.com/user-attachments/assets/cbe2fb48-178b-4053-99a4-fdb39c9f915a" />
-<img width="1512" height="2016" alt="IMG_6675" src="https://github.com/user-attachments/assets/b7061079-5742-40fe-9769-c8676392a57c" />
 <img width="2142" height="2856" alt="IMG_6674" src="https://github.com/user-attachments/assets/ff6ed42d-d3f5-402d-b640-4d988ab90d69" />
-<img width="2856" height="2142" alt="IMG_6673" src="https://github.com/user-attachments/assets/3e4bd048-dc0f-4f4d-bccb-4a9a2a33746e" />
+<img width="1512" height="2016" alt="IMG_6675" src="https://github.com/user-attachments/assets/b7061079-5742-40fe-9769-c8676392a57c" />
 
 
 With the pipeline functional, live ADS-B traffic was captured in interactive mode to confirm correct decoding:
@@ -137,7 +136,7 @@ A single capture session of roughly 30 minutes yielded 2,331 raw message lines, 
 
 Raw hex messages were decoded using the `pyModeS` library, which parses Mode S/ADS-B frames into structured fields (Downlink Format, ICAO address, ADS-B type code, position, velocity, and identification data) rather than requiring the team to hand-implement the CPR position-decoding algorithm and checksum validation:
 
-Fire up python virtual environment and install pyModeS
+Fire up python virtual environment and install pyModeS.
 
 ```
 python3 -m venv 1090-capture
@@ -165,15 +164,15 @@ with open("baseline_capture.txt") as f:
         msg = line.strip().strip("*;")
         if len(msg) == 28:
             try:
-            # pyModeS 3 returns a dictionary-like object with all decoded fields
+            #pyModeS 3 returns a dictionary-like object with all decoded fields
                 res = pms.decode(msg)
                 if res.get("df") == 17:
                     icao = res.get("icao")
                     tc = res.get("typecode")
                     print(icao, tc, msg)
             except Exception:
-                # Skip messages that fail decoding/checksum validation
-                continue  # skip messages that fail checksum/decoding validation
+                #skip messages that fail decoding/checksum validation
+                continue  #skip messages that fail checksum/decoding validation
 ```
 
 <img width="775" height="503" alt="image" src="https://github.com/user-attachments/assets/0c30e091-0557-487b-a133-fe0744ae689e" />
